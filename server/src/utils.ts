@@ -28,25 +28,6 @@ export function findPlayerBySocket(ws: ServerWebSocket): ConnectedPlayer | null 
     return null;
 }
 
-export function createPlayer(campaign: Campaign, playerName: string): ConnectedPlayer {
-    const id: number = campaign.nextPlayerId++;
-    const connectedPlayer: ConnectedPlayer = {
-        player: {
-            id,
-            name: playerName,
-            inventory: {
-                capacity: 100,
-                items: []
-            }
-        },
-        ws: null
-    };
-
-    campaign.players!.set(id, connectedPlayer);
-
-    return connectedPlayer;
-}
-
 export function saveCampaign(campaign: Campaign){
     fs.writeFile(`./campaigns/campaign-${campaign.code}.json`, JSON.stringify({
         code: campaign.code,

@@ -2,7 +2,7 @@ import { ServerWebSocket } from "bun";
 import { campaigns } from "./campaigns";
 import randomstring from "randomstring";
 import { JoinData } from "./types";
-import { createPlayer, findPlayerByName, loadCampaigns, saveCampaign } from "./utils";
+import { findPlayerByName, loadCampaigns, saveCampaign } from "./utils";
 
 export function createCampaign(ws: ServerWebSocket){
     let campaignCode;
