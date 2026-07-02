@@ -1,0 +1,22 @@
+{
+    "code": "c5Jbx",
+    "nextPlayerId": 3,
+    "players": [
+        {
+            "id": 1,
+            "name": "Frodo",
+            "inventory": {
+                "capacity": 100,
+                "items": []
+            }
+        },
+        {
+            "id": 2,
+            "name": "Smeagol",
+            "inventory": {
+                "capacity": 100,
+                "items": []
+            }
+        }
+    ]
+}
