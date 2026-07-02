@@ -1,5 +1,7 @@
+import { ServerWebSocket } from "bun";
+import { campaigns } from "./campaigns";
 import { ConnectedPlayer, Campaign, CampaignData } from "./types";
-import fs, { readdirSync } from "fs";
+import fs from "fs";
 
 
 export function findPlayerByName(campaign: Campaign, playerName: string): ConnectedPlayer | undefined {
@@ -11,6 +13,19 @@ export function findPlayerByName(campaign: Campaign, playerName: string): Connec
         .find(p => p.player.name === playerName);
 
     return foundPlayer;
+}
+
+export function findPlayerBySocket(ws: ServerWebSocket): ConnectedPlayer | null {
+    const currentCampaign = getCurrentCampaign();
+    if(currentCampaign === null){
+        return null;
+    }
+    for(const player of currentCampaign.players!.values()){
+        if(player.ws === ws){
+            return player;
+        }
+    }
+    return null;
 }
 
 export function createPlayer(campaign: Campaign, playerName: string): ConnectedPlayer {
@@ -45,7 +60,7 @@ export function saveCampaign(campaign: Campaign){
 
 export function loadCampaigns(): Map<string, Campaign>{
     const campaignArray: Campaign[] = [];
-    const filenames = readdirSync("./campaigns");
+    const filenames = fs.readdirSync("./campaigns");
     filenames.forEach(filename => {
         const content = fs.readFileSync(`./campaigns/${filename}`, "utf-8")
         campaignArray.push(campaignDataToCampaign(JSON.parse(content)));
@@ -67,8 +82,19 @@ function campaignDataToCampaign(campaignData: CampaignData): Campaign{
     const convertedCampaign = {
         ...campaignData,
         dm: null,
-        players: playerList
+        players: playerList,
+        isHosted: false
     }
 
     return convertedCampaign;
+}
+
+function getCurrentCampaign(): Campaign | null {
+    for(const campaign of campaigns.values()){
+        if(campaign.isHosted){
+            return campaign;
+        }
+    }
+
+    return null;
 }

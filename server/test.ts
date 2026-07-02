@@ -29,6 +29,25 @@ function joinCampaign(campaignCode: string, playerName: string){
     }
 };
 
+function hostCampaign(campaignCode: string){
+    socket.onopen = () => {
+        socket.send(JSON.stringify({
+            type: "HOST_CAMPAIGN",
+            campaignCode
+        }))
+    }
+}
+
+function closeCampaign(campaignCode: string){
+    socket.onopen = () => {
+        socket.send(JSON.stringify({
+            type: "CLOSE_CAMPAIGN",
+            campaignCode
+        }))
+    }
+}
+
 connect();
 // createCampaign();
-joinCampaign("c5Jbx", "Smeagol");
+// hostCampaign("UBDvZ");
+joinCampaign("UBDvZ", "Smeagol");

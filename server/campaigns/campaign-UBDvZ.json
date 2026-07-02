@@ -1,5 +1,14 @@
 {
     "code": "UBDvZ",
-    "nextPlayerId": 1,
-    "players": []
+    "nextPlayerId": 2,
+    "players": [
+        {
+            "id": 1,
+            "name": "Smeagol",
+            "inventory": {
+                "capacity": 100,
+                "items": []
+            }
+        }
+    ]
 }

@@ -15,7 +15,8 @@ export function createCampaign(ws: ServerWebSocket){
         code: campaignCode,
         nextPlayerId: 1,
         dm: ws,
-        players: new Map()
+        players: new Map(),
+        isHosted: false
     }
     
     campaigns.set(campaignCode, campaign);
@@ -29,7 +30,46 @@ export function createCampaign(ws: ServerWebSocket){
 }
 
 export function hostCampaign(ws: ServerWebSocket, campaignCode: string){
-    
+    const campaign = campaigns.get(campaignCode);
+
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found"
+        }));
+        return;
+    }
+
+    campaign.isHosted = true;
+    campaign.dm = ws;
+
+    ws.send(JSON.stringify({
+        type: "CAMPAIGN_HOSTED",
+        campaign
+    }));
+}
+
+export function closeCampaign(ws: ServerWebSocket, campaignCode: string){
+    const campaign = campaigns.get(campaignCode);
+
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found"
+        }));
+        return;
+    }
+
+    campaign.isHosted = false;
+    campaign.dm = null;
+    campaign.players?.forEach(p => p.ws = null);
+
+    saveCampaign(campaign);
+
+    ws.send(JSON.stringify({
+        type: "CAMPAIGN_CLOSED",
+        campaign
+    }));
 }
 
 export function joinCampaign(ws: ServerWebSocket, data: JoinData){
@@ -39,6 +79,14 @@ export function joinCampaign(ws: ServerWebSocket, data: JoinData){
         ws.send(JSON.stringify({
             type: "ERROR",
             message: "Campaign not found"
+        }));
+        return;
+    }
+
+    if(campaign.isHosted === false){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not currently hosted"
         }));
         return;
     }
@@ -54,5 +102,5 @@ export function joinCampaign(ws: ServerWebSocket, data: JoinData){
     ws.send(JSON.stringify({
         type: "CAMPAIGN_JOINED",
         player: player.player
-    }))
+    }));
 }

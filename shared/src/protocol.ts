@@ -1,10 +1,16 @@
 import { Inventory, Player } from "./types";
-import { ConnectedPlayer } from "../../server/src/types";
+import { Campaign, ConnectedPlayer } from "../../server/src/types";
 
 export interface ClientToServer {
     CREATE_CAMPAIGN: {};
+    HOST_CAMPAIGN: {
+        campaignCode: string;
+    };
+    CLOSE_CAMPAIGN: {
+        campaignCode: string;
+    }
     JOIN_CAMPAIGN: {
-        code: string;
+        campaignCode: string;
         player: ConnectedPlayer;
     };
     REQUEST_USE_ITEM: {
@@ -14,11 +20,15 @@ export interface ClientToServer {
 
 export interface ServerToClient {
     CAMPAIGN_CREATED: {
-        code: string
+        code: string;
     };
     CAMPAIGN_JOINED: {
-        player: Player
+        player: Player;
     };
+    CAMPAIGN_HOSTED: {
+        campaign: Campaign;
+    };
+    CAMPAIGN_CLOSED: {}
     INVENTORY_SYNC: {
         inventory: Inventory;
     };

@@ -1,4 +1,4 @@
-import { createCampaign, joinCampaign } from "./handlers";
+import { closeCampaign, createCampaign, hostCampaign, joinCampaign } from "./handlers";
 
 const server = Bun.serve({
     port: 3000,
@@ -22,6 +22,12 @@ const server = Bun.serve({
             switch(data.type){
                 case "CREATE_CAMPAIGN":
                     createCampaign(ws);
+                    break;
+                case "HOST_CAMPAIGN":
+                    hostCampaign(ws, data.campaignCode);
+                    break;
+                case "CLOSE_CAMPAIGN":
+                    closeCampaign(ws, data.campaignCode);
                     break;
                 case "JOIN_CAMPAIGN":
                     joinCampaign(ws, data.joinData)

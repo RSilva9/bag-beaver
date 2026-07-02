@@ -22,4 +22,5 @@ export interface Campaign {
     nextPlayerId: number;
     dm: ServerWebSocket<unknown> | null;
     players: Map<number, ConnectedPlayer> | null;
+    isHosted: boolean;
 }
