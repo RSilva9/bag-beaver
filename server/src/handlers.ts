@@ -91,9 +91,15 @@ export function joinCampaign(ws: ServerWebSocket, data: JoinData){
         return;
     }
     
-    const player =
-        findPlayerByName(campaign, data.playerName)
-        ?? createPlayer(campaign, data.playerName);
+    const player = findPlayerByName(campaign, data.playerName)
+
+    if(player === undefined){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "You are not a member of this campaign's party."
+        }));
+        return;
+    }
 
     player.ws = ws;
 
