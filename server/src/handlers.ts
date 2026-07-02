@@ -1,49 +1,58 @@
 import { ServerWebSocket } from "bun";
-import { sessions } from "./sessions";
+import { campaigns } from "./campaigns";
 import randomstring from "randomstring";
 import { JoinData } from "./types";
-import { createPlayer, findPlayerByName, saveSession } from "./utils";
+import { createPlayer, findPlayerByName, loadCampaigns, saveCampaign } from "./utils";
 
-export function createSession(ws: ServerWebSocket){
-    let sessionCode;
+export function createCampaign(ws: ServerWebSocket){
+    let campaignCode;
     do{
-        sessionCode = randomstring.generate({length: 5, charset: "alphanumeric"});
+        campaignCode = randomstring.generate({length: 5, charset: "alphanumeric"});
     }
-    while(sessions.has(sessionCode));
+    while(campaigns.has(campaignCode));
 
-    const session = {
-        code: sessionCode,
+    const campaign = {
+        code: campaignCode,
         nextPlayerId: 1,
         dm: ws,
         players: new Map()
     }
     
-    sessions.set(sessionCode, session)
+    campaigns.set(campaignCode, campaign);
 
-    saveSession(session);
+    saveCampaign(campaign);
+
+    ws.send(JSON.stringify({
+        type: "CAMPAIGN_CREATED",
+        campaign
+    }));
 }
 
-export function joinSession(ws: ServerWebSocket, data: JoinData){
-    const session = sessions.get(data.sessionCode);
+export function hostCampaign(ws: ServerWebSocket, campaignCode: string){
+    
+}
 
-    if(!session){
+export function joinCampaign(ws: ServerWebSocket, data: JoinData){
+    const campaign = campaigns.get(data.campaignCode);
+
+    if(!campaign){
         ws.send(JSON.stringify({
             type: "ERROR",
-            message: "Session not found"
+            message: "Campaign not found"
         }));
         return;
     }
     
     const player =
-        findPlayerByName(session, data.playerName)
-        ?? createPlayer(session, data.playerName);
+        findPlayerByName(campaign, data.playerName)
+        ?? createPlayer(campaign, data.playerName);
 
     player.ws = ws;
 
-    saveSession(session);
+    saveCampaign(campaign);
 
     ws.send(JSON.stringify({
-        type: "SESSION_JOINED",
+        type: "CAMPAIGN_JOINED",
         player: player.player
     }))
 }

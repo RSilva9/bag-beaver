@@ -2,8 +2,8 @@ import { Inventory, Player } from "./types";
 import { ConnectedPlayer } from "../../server/src/types";
 
 export interface ClientToServer {
-    CREATE_SESSION: {};
-    JOIN_SESSION: {
+    CREATE_CAMPAIGN: {};
+    JOIN_CAMPAIGN: {
         code: string;
         player: ConnectedPlayer;
     };
@@ -13,10 +13,10 @@ export interface ClientToServer {
 }
 
 export interface ServerToClient {
-    SESSION_CREATED: {
+    CAMPAIGN_CREATED: {
         code: string
     };
-    SESSION_JOINED: {
+    CAMPAIGN_JOINED: {
         player: Player
     };
     INVENTORY_SYNC: {

@@ -1,4 +1,4 @@
-import { createSession } from "./handlers";
+import { createCampaign, joinCampaign } from "./handlers";
 
 const server = Bun.serve({
     port: 3000,
@@ -20,11 +20,11 @@ const server = Bun.serve({
             const data = JSON.parse(message.toString());
             
             switch(data.type){
-                case "CREATE_SESSION":
-                    createSession(ws);
+                case "CREATE_CAMPAIGN":
+                    createCampaign(ws);
                     break;
-                case "JOIN_SESSION":
-                    // joinSession(ws, data)
+                case "JOIN_CAMPAIGN":
+                    joinCampaign(ws, data.joinData)
                     break;
             }
         },

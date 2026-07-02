@@ -2,24 +2,24 @@ import { ServerWebSocket } from "bun";
 import { Player } from "../../shared/src/types";
 
 export interface JoinData {
-    sessionCode: string;
+    campaignCode: string;
     playerName: string;
 }
 
 export interface ConnectedPlayer {
     player: Player;
-    ws?: ServerWebSocket<unknown>;
+    ws: ServerWebSocket<unknown> | null;
 }
 
-export interface SessionData {
+export interface CampaignData {
     code: string;
     nextPlayerId: number;
     players: Player[];
 }
 
-export interface Session {
+export interface Campaign {
     code: string;
     nextPlayerId: number;
-    dm: ServerWebSocket<unknown>;
-    players: Map<number, ConnectedPlayer>;
+    dm: ServerWebSocket<unknown> | null;
+    players: Map<number, ConnectedPlayer> | null;
 }
