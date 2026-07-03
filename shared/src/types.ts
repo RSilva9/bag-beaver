@@ -2,7 +2,6 @@ export interface Item {
     name: string
     description: string
     size: number
-    image: string
 }
 
 export interface Inventory {

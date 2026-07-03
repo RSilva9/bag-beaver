@@ -6,16 +6,20 @@ export interface ClientToServer {
     HOST_CAMPAIGN: {
         campaignCode: string;
     };
-    CLOSE_CAMPAIGN: {
-        campaignCode: string;
-    }
+    CLOSE_CAMPAIGN: {};
     JOIN_CAMPAIGN: {
         campaignCode: string;
         player: ConnectedPlayer;
     };
+    CREATE_PLAYER: {
+        player: Player;
+    };
+    DELETE_PLAYER: {
+        playerId: number;
+    }
     REQUEST_USE_ITEM: {
         itemId: string;
-    }
+    };
 }
 
 export interface ServerToClient {
@@ -28,7 +32,11 @@ export interface ServerToClient {
     CAMPAIGN_HOSTED: {
         campaign: Campaign;
     };
-    CAMPAIGN_CLOSED: {}
+    CAMPAIGN_CLOSED: {};
+    PLAYER_CREATED: {
+        player: ConnectedPlayer;
+    };
+    PLAYER_DELETED: {};
     INVENTORY_SYNC: {
         inventory: Inventory;
     };

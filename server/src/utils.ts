@@ -70,7 +70,7 @@ function campaignDataToCampaign(campaignData: CampaignData): Campaign{
     return convertedCampaign;
 }
 
-function getCurrentCampaign(): Campaign | null {
+export function getCurrentCampaign(): Campaign | null {
     for(const campaign of campaigns.values()){
         if(campaign.isHosted){
             return campaign;

@@ -1,8 +1,9 @@
 import { ServerWebSocket } from "bun";
 import { campaigns } from "./campaigns";
 import randomstring from "randomstring";
-import { JoinData } from "./types";
-import { findPlayerByName, loadCampaigns, saveCampaign } from "./utils";
+import { ConnectedPlayer, JoinData } from "./types";
+import { findPlayerByName, getCurrentCampaign, loadCampaigns, saveCampaign } from "./utils";
+import { Player } from "../../shared/src/types";
 
 export function createCampaign(ws: ServerWebSocket){
     let campaignCode;
@@ -49,8 +50,8 @@ export function hostCampaign(ws: ServerWebSocket, campaignCode: string){
     }));
 }
 
-export function closeCampaign(ws: ServerWebSocket, campaignCode: string){
-    const campaign = campaigns.get(campaignCode);
+export function closeCampaign(ws: ServerWebSocket){
+    const campaign = getCurrentCampaign();
 
     if(!campaign){
         ws.send(JSON.stringify({
@@ -108,5 +109,63 @@ export function joinCampaign(ws: ServerWebSocket, data: JoinData){
     ws.send(JSON.stringify({
         type: "CAMPAIGN_JOINED",
         player: player.player
+    }));
+}
+
+export function createPlayer(ws: ServerWebSocket, playerData: Player): ConnectedPlayer | null{
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found"
+        }));
+        return null;
+    }
+
+    const id: number = campaign.nextPlayerId++;
+    const connectedPlayer: ConnectedPlayer = {
+        player: {
+            id,
+            name: playerData.name,
+            inventory: playerData.inventory
+        },
+        ws: null
+    };
+
+    campaign.players!.set(id, connectedPlayer);
+
+    saveCampaign(campaign);
+
+    ws.send(JSON.stringify({
+        type: "PLAYER_CREATED",
+        player: connectedPlayer
+    }));
+
+    return connectedPlayer;
+}
+
+export function deletePlayer(ws: ServerWebSocket, playerId: number){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found"
+        }));
+        return;
+    }
+    
+    const deletedPlayer = campaign.players?.delete(playerId);
+    if(!deletedPlayer){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Failed to delete player from campaign."
+        }));
+        return;
+    }
+
+    saveCampaign(campaign);
+
+    ws.send(JSON.stringify({
+        type: "PLAYER_DELETED"
     }));
 }

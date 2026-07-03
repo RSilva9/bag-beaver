@@ -1,4 +1,4 @@
-import { closeCampaign, createCampaign, hostCampaign, joinCampaign } from "./handlers";
+import { closeCampaign, createCampaign, createPlayer, deletePlayer, hostCampaign, joinCampaign } from "./handlers";
 
 const server = Bun.serve({
     port: 3000,
@@ -27,11 +27,16 @@ const server = Bun.serve({
                     hostCampaign(ws, data.campaignCode);
                     break;
                 case "CLOSE_CAMPAIGN":
-                    closeCampaign(ws, data.campaignCode);
+                    closeCampaign(ws);
                     break;
                 case "JOIN_CAMPAIGN":
                     joinCampaign(ws, data.joinData)
                     break;
+                case "CREATE_PLAYER":
+                    createPlayer(ws, data.player);
+                    break;
+                case "DELETE_PLAYER":
+                    deletePlayer(ws, data.playerId);
             }
         },
 
