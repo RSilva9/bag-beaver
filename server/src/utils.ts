@@ -1,10 +1,10 @@
 import { ServerWebSocket } from "bun";
 import { campaigns } from "./campaigns";
-import { ConnectedPlayer, Campaign, CampaignData } from "./types";
+import { ConnectedPlayer, Campaign } from "./types";
 import fs from "fs";
+import { CampaignData, Inventory, Item } from "../../shared/src/types";
 
-
-export function findPlayerByName(campaign: Campaign, playerName: string): ConnectedPlayer | undefined {
+export function getPlayerByName(campaign: Campaign, playerName: string): ConnectedPlayer | undefined {
     if(!campaign.players){
         console.error("No players found")
         return;
@@ -15,7 +15,18 @@ export function findPlayerByName(campaign: Campaign, playerName: string): Connec
     return foundPlayer;
 }
 
-export function findPlayerBySocket(ws: ServerWebSocket): ConnectedPlayer | null {
+export function getPlayerById(campaign: Campaign, playerId: number): ConnectedPlayer | undefined {
+    if(!campaign.players){
+        console.error("No players found.")
+        return;
+    }
+    const foundPlayer = [...campaign.players.values()]
+        .find(p => p.player.id === playerId);
+
+    return foundPlayer;
+}
+
+export function getPlayerBySocket(ws: ServerWebSocket): ConnectedPlayer | null {
     const currentCampaign = getCurrentCampaign();
     if(currentCampaign === null){
         return null;
@@ -78,4 +89,16 @@ export function getCurrentCampaign(): Campaign | null {
     }
 
     return null;
+}
+
+export function updateInventoryForPlayerAndDM(playerSocket: ServerWebSocket, dmSocket: ServerWebSocket, inventory: Inventory){
+    playerSocket.send(JSON.stringify({
+        type: "INVENTORY_SYNC",
+        inventory
+    }));
+
+    dmSocket.send(JSON.stringify({
+        type: "INVENTORY_SYNC",
+        inventory
+    }));
 }

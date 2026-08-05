@@ -16,10 +16,26 @@ export interface ClientToServer {
     };
     DELETE_PLAYER: {
         playerId: number;
-    }
-    REQUEST_USE_ITEM: {
+    };
+    USE_ITEM: {
         itemId: string;
     };
+    DROP_ITEM: {
+        itemId: string;
+        playerId: number;
+        note: string;
+    };
+    MOVE_ITEM: {
+        itemId: string;
+        playerId: number;
+        bagId: string;
+        direction: string;
+    };
+    TRANSFER_ITEM: {
+        itemId: string;
+        giverPlayerId: number;
+        getterPlayerId: number;
+    }
 }
 
 export interface ServerToClient {

@@ -1,10 +1,11 @@
 import { ServerWebSocket } from "bun";
 import { campaigns } from "./campaigns";
 import randomstring from "randomstring";
-import { ConnectedPlayer, JoinData } from "./types";
-import { findPlayerByName, getCurrentCampaign, loadCampaigns, saveCampaign } from "./utils";
-import { Player } from "../../shared/src/types";
+import { ConnectedPlayer } from "./types";
+import { getPlayerByName, getCurrentCampaign, saveCampaign, getPlayerById, updateInventoryForPlayerAndDM } from "./utils";
+import { Item, Player } from "../../shared/src/types";
 
+//#region CAMPAIGNS
 export function createCampaign(ws: ServerWebSocket){
     let campaignCode;
     do{
@@ -17,6 +18,7 @@ export function createCampaign(ws: ServerWebSocket){
         nextPlayerId: 1,
         dm: ws,
         players: new Map(),
+        droppedItems: [],
         isHosted: false
     }
     
@@ -32,7 +34,6 @@ export function createCampaign(ws: ServerWebSocket){
 
 export function hostCampaign(ws: ServerWebSocket, campaignCode: string){
     const campaign = campaigns.get(campaignCode);
-
     if(!campaign){
         ws.send(JSON.stringify({
             type: "ERROR",
@@ -52,7 +53,6 @@ export function hostCampaign(ws: ServerWebSocket, campaignCode: string){
 
 export function closeCampaign(ws: ServerWebSocket){
     const campaign = getCurrentCampaign();
-
     if(!campaign){
         ws.send(JSON.stringify({
             type: "ERROR",
@@ -73,9 +73,8 @@ export function closeCampaign(ws: ServerWebSocket){
     }));
 }
 
-export function joinCampaign(ws: ServerWebSocket, data: JoinData){
-    const campaign = campaigns.get(data.campaignCode);
-
+export function joinCampaign(ws: ServerWebSocket, campaignCode: string, playerName: string){
+    const campaign = campaigns.get(campaignCode);
     if(!campaign){
         ws.send(JSON.stringify({
             type: "ERROR",
@@ -87,12 +86,12 @@ export function joinCampaign(ws: ServerWebSocket, data: JoinData){
     if(campaign.isHosted === false){
         ws.send(JSON.stringify({
             type: "ERROR",
-            message: "Campaign not currently hosted"
+            message: "Campaign not currently hosted."
         }));
         return;
     }
     
-    const player = findPlayerByName(campaign, data.playerName)
+    const player = getPlayerByName(campaign, playerName)
 
     if(player === undefined){
         ws.send(JSON.stringify({
@@ -111,13 +110,15 @@ export function joinCampaign(ws: ServerWebSocket, data: JoinData){
         player: player.player
     }));
 }
+//#endregion
 
+//#region PLAYERS
 export function createPlayer(ws: ServerWebSocket, playerData: Player): ConnectedPlayer | null{
     const campaign = getCurrentCampaign();
     if(!campaign){
         ws.send(JSON.stringify({
             type: "ERROR",
-            message: "Campaign not found"
+            message: "Campaign not found."
         }));
         return null;
     }
@@ -149,7 +150,7 @@ export function deletePlayer(ws: ServerWebSocket, playerId: number){
     if(!campaign){
         ws.send(JSON.stringify({
             type: "ERROR",
-            message: "Campaign not found"
+            message: "Campaign not found."
         }));
         return;
     }
@@ -169,3 +170,234 @@ export function deletePlayer(ws: ServerWebSocket, playerId: number){
         type: "PLAYER_DELETED"
     }));
 }
+//#endregion
+
+//#region ITEMS
+export function addItem(ws: ServerWebSocket, item: Item, playerId: number){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    if(ws !== campaign.dm){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Unauthorized, only the DM may add items."
+        }));
+        return;
+    }
+
+    player.player.inventory.items.push(item);
+
+    saveCampaign(campaign);
+
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function removeItem(ws: ServerWebSocket, itemId: string, playerId: number){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    player.player.inventory.items =
+        player.player.inventory.items.filter(i => i.id !== itemId);
+
+    saveCampaign(campaign);
+
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function dropItem(ws: ServerWebSocket, itemId: string, playerId: number, note: string){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    const droppedItem = player.player.inventory.items.find(i => i.id === itemId);
+
+    player.player.inventory.items =
+        player.player.inventory.items.filter(i => i !== droppedItem);
+
+    if(!droppedItem){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Item not found."
+        }));
+        return;
+    }
+    campaign.droppedItems.push({
+        item: droppedItem,
+        note
+    });
+
+    saveCampaign(campaign);
+
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function pickUpItem(ws: ServerWebSocket, itemId: string, playerId: number){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    const pickedUpItem = campaign.droppedItems.find(i => i.item.id === itemId)?.item;
+
+    if(!pickedUpItem){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Item not found."
+        }));
+        return;
+    }
+    
+    player.player.inventory.items.push(pickedUpItem);
+
+    saveCampaign(campaign);
+
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function moveItemIntoBag(ws: ServerWebSocket, itemId: string, playerId: number, bagId: string){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    const item = player.player.inventory.items.find(i => i.id === itemId);
+    const bag = player.player.inventory.items.find(i => i.id === bagId);
+
+    player.player.inventory.items =
+        player.player.inventory.items.filter(i => i.id !== itemId);
+    if (bag && bag.inventory) {
+        bag.inventory.items.push(item!);
+    }
+    
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function moveItemOutOfBag(ws: ServerWebSocket, itemId: string, playerId: number, bagId: string){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    const item = player.player.inventory.items.find(i => i.id === itemId);
+    const bag = player.player.inventory.items.find(i => i.id === bagId);
+
+    if (bag && bag.inventory) {
+        bag.inventory.items = bag.inventory.items.filter(i => i !== item);
+    }
+    player.player.inventory.items.push(item!);
+
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function transferItem(ws: ServerWebSocket, itemId: string, giverPlayerId: number, getterPlayerId: number){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+    const giverPlayer = getPlayerById(campaign, giverPlayerId);
+    const getterPlayer = getPlayerById(campaign, getterPlayerId);
+    if(!giverPlayer || !getterPlayer){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Transfer failed."
+        }));
+        return;
+    }
+
+    const item = giverPlayer.player.inventory.items.find(i => i.id === itemId);
+
+    giverPlayer.player.inventory.items =
+        giverPlayer.player.inventory.items.filter(i => i !== item);
+    getterPlayer.player.inventory.items.push(item!);
+
+    updateInventoryForPlayerAndDM(giverPlayer.ws!, campaign.dm!, giverPlayer.player.inventory);
+    updateInventoryForPlayerAndDM(getterPlayer.ws!, campaign.dm!, getterPlayer.player.inventory);
+}
+//#endregion
