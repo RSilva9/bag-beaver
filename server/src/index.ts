@@ -1,4 +1,4 @@
-import { addItem, closeCampaign, createCampaign, createPlayer, deletePlayer, dropItem, hostCampaign, joinCampaign, moveItemIntoBag, moveItemOutOfBag, removeItem, transferItem } from "./handlers";
+import { addItem, closeCampaign, createCampaign, createPlayer, deletePlayer, dropItem, hostCampaign, joinCampaign, moveItemIntoBag, moveItemOutOfBag, pickUpItem, removeItem, transferItem } from "./handlers";
 
 const server = Bun.serve({
     port: 3000,
@@ -46,6 +46,9 @@ const server = Bun.serve({
                     break;
                 case "DROP_ITEM":
                     dropItem(ws, data.itemId, data.playerId, data.note);
+                    break;
+                case "PICK_UP_ITEM":
+                    pickUpItem(ws, data.itemId, data.playerId);
                     break;
                 case "MOVE_ITEM":
                     if(data.direction === "IN"){

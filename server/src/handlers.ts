@@ -256,7 +256,7 @@ export function dropItem(ws: ServerWebSocket, itemId: string, playerId: number, 
     const droppedItem = player.player.inventory.items.find(i => i.id === itemId);
 
     player.player.inventory.items =
-        player.player.inventory.items.filter(i => i.id !== itemId);
+        player.player.inventory.items.filter(i => i !== droppedItem);
 
     if(!droppedItem){
         ws.send(JSON.stringify({
@@ -269,6 +269,42 @@ export function dropItem(ws: ServerWebSocket, itemId: string, playerId: number, 
         item: droppedItem,
         note
     });
+
+    saveCampaign(campaign);
+
+    updateInventoryForPlayerAndDM(player.ws!, campaign.dm!, player.player.inventory);
+}
+
+export function pickUpItem(ws: ServerWebSocket, itemId: string, playerId: number){
+    const campaign = getCurrentCampaign();
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    const pickedUpItem = campaign.droppedItems.find(i => i.item.id === itemId)?.item;
+
+    if(!pickedUpItem){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Item not found."
+        }));
+        return;
+    }
+    
+    player.player.inventory.items.push(pickedUpItem);
 
     saveCampaign(campaign);
 
