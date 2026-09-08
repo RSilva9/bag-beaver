@@ -1,16 +1,17 @@
 import { ServerWebSocket } from "bun";
 import { DroppedItem, Player } from "../../shared/src/types";
 
-export interface ConnectedPlayer {
-    player: Player;
-    ws: ServerWebSocket | null;
+export interface Connection {
+    ws: ServerWebSocket;
+    campaignCode: string;
+    playerId?: number;
+    role: "PLAYER" | "DM";
 }
 
 export interface Campaign {
     code: string;
+    dmSecret: string;
     nextPlayerId: number;
-    dm: ServerWebSocket | null;
-    players: Map<number, ConnectedPlayer> | null;
+    players: Player[];
     droppedItems: DroppedItem[];
-    isHosted: boolean;
 }

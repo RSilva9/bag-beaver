@@ -1,4 +1,5 @@
-import { addItem, closeCampaign, createCampaign, createPlayer, deletePlayer, dropItem, hostCampaign, joinCampaign, moveItemIntoBag, moveItemOutOfBag, pickUpItem, removeItem, transferItem } from "./handlers";
+import { connections } from "./campaigns";
+import { addItem, createCampaign, createPlayer, deletePlayer, dropItem, joinCampaign, moveItemIntoBag, moveItemOutOfBag, pickUpItem, removeItem, transferItem } from "./handlers";
 
 const server = Bun.serve({
     port: 3000,
@@ -21,50 +22,45 @@ const server = Bun.serve({
             
             switch(data.type){
                 case "CREATE_CAMPAIGN":
-                    createCampaign(ws);
-                    break;
-                case "HOST_CAMPAIGN":
-                    hostCampaign(ws, data.campaignCode);
-                    break;
-                case "CLOSE_CAMPAIGN":
-                    closeCampaign(ws);
+                    createCampaign();
                     break;
                 case "JOIN_CAMPAIGN":
                     joinCampaign(ws, data.campaignCode, data.playerName)
                     break;
                 case "CREATE_PLAYER":
-                    createPlayer(ws, data.player);
+                    createPlayer(ws, data.player, data.campaignCode);
                     break;
                 case "DELETE_PLAYER":
-                    deletePlayer(ws, data.playerId);
+                    deletePlayer(ws, data.playerId, data.campaignCode);
                     break;
                 case "ADD_ITEM":
-                    addItem(ws, data.item, data.playerId);
+                    addItem(ws, data.item, data.playerId, data.campaignCode);
                     break;
                 case "REMOVE_ITEM":
-                    removeItem(ws, data.itemId, data.playerId);
+                    removeItem(ws, data.itemId, data.playerId, data.campaignCode);
                     break;
                 case "DROP_ITEM":
-                    dropItem(ws, data.itemId, data.playerId, data.note);
+                    dropItem(ws, data.itemId, data.playerId, data.note, data.campaignCode);
                     break;
                 case "PICK_UP_ITEM":
-                    pickUpItem(ws, data.itemId, data.playerId);
+                    pickUpItem(ws, data.itemId, data.playerId, data.campaignCode);
                     break;
                 case "MOVE_ITEM":
                     if(data.direction === "IN"){
-                        moveItemIntoBag(ws, data.itemId, data.playerId, data.bagId);
+                        moveItemIntoBag(ws, data.itemId, data.playerId, data.bagId, data.campaignCode);
                     }else{
-                        moveItemOutOfBag(ws, data.itemId, data.playerId, data.bagId);
+                        moveItemOutOfBag(ws, data.itemId, data.playerId, data.bagId, data.campaignCode);
                     }
                     break;
                 case "TRANSFER_ITEM":
-                    transferItem(ws, data.itemId, data.giverPlayerId, data.getterPlayerId);
+                    transferItem(ws, data.itemId, data.giverPlayerId, data.getterPlayerId, data.campaignCode);
                     break;
             }
         },
 
         close(ws){
             console.log("Disconnected");
+            connections.delete(ws);
         }
     }
 })

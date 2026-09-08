@@ -20,11 +20,5 @@ export interface Player {
     id: number;
     name: string;
     inventory: Inventory;
-}
-
-export interface CampaignData {
-    code: string;
-    nextPlayerId: number;
-    players: Player[];
-    droppedItems: DroppedItem[];
+    role: "PLAYER" | "DM";
 }
