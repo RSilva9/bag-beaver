@@ -25,6 +25,10 @@ export interface ClientToServer {
         playerId: number;
         note: string;
     };
+    PICK_UP_ITEM: {
+        itemId: string;
+        playerId: number;
+    }
     MOVE_ITEM: {
         itemId: string;
         playerId: number;
