@@ -25,6 +25,7 @@ export interface Player {
 
 export interface Campaign {
     code: string;
+    name: string;
     dmSecret: string;
     nextPlayerId: number;
     players: Player[];

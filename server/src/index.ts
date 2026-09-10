@@ -22,7 +22,7 @@ const server = Bun.serve({
             
             switch(data.type){
                 case "CREATE_CAMPAIGN":
-                    createCampaign();
+                    createCampaign(data.name);
                     break;
                 case "GET_CAMPAIGNS":
                     getCampaigns(ws);

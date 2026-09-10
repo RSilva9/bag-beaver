@@ -7,7 +7,7 @@ import { Connection } from "./types";
 import { Campaign } from "../../shared/src/types";
 
 //#region CAMPAIGNS
-export function createCampaign(){
+export function createCampaign(name: string){
     let campaignCode;
     do{
         campaignCode = randomstring.generate({length: 5, charset: "alphanumeric"});
@@ -16,6 +16,7 @@ export function createCampaign(){
 
     const campaign: Campaign = {
         code: campaignCode,
+        name,
         dmSecret: randomstring.generate({length: 5, charset: "alphanumeric"}),
         nextPlayerId: 1,
         players: [],
@@ -30,7 +31,7 @@ export function createCampaign(){
 export function getCampaigns(ws: ServerWebSocket){
     ws.send(JSON.stringify({
         type: "CAMPAIGN_LIST",
-        campaigns
+        campaigns: Array.from(campaigns.values())
     }));
 }
 
@@ -67,6 +68,7 @@ export function joinCampaign(ws: ServerWebSocket, campaignCode: string, playerNa
         type: "CAMPAIGN_JOINED",
         player
     }));
+    broadcastPlayerList(campaign);
 }
 
 export function joinCampaignAsDM(ws: ServerWebSocket, campaignCode: string, dmSecret: string){
@@ -463,6 +465,21 @@ export function broadcastCapacity(playerId: number, load: { used: number; max: n
                 used: load.used,
                 max: load.max
             }))
+        }
+    }
+}
+
+function broadcastPlayerList(campaign: Campaign){
+    const players = campaign.players
+        .filter(p => p.role !== "DM")
+        .map(p => {
+            const { used, max } = getInventoryLoad(p.inventory);
+            return { id: p.id, name: p.name, used, max };
+        });
+
+    for(const [ws, conn] of connections){
+        if(conn.campaignCode === campaign.code){
+            ws.send(JSON.stringify({ type: "PLAYER_LIST", players }));
         }
     }
 }

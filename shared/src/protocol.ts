@@ -3,7 +3,9 @@ import { Campaign } from "./types";
 
 export interface ClientToServer {
     // CAMPAIGN
-    CREATE_CAMPAIGN: {};
+    CREATE_CAMPAIGN: {
+        name: string;
+    };
     GET_CAMPAIGNS: {};
     JOIN_CAMPAIGN: {
         campaignCode: string;
@@ -70,7 +72,7 @@ export interface ClientToServer {
 export interface ServerToClient {
     // CAMPAIGN
     CAMPAIGN_LIST:{
-        campaings: Campaign[]
+        campaigns: Campaign[]
     };
     CAMPAIGN_JOINED: {
         player: Player;

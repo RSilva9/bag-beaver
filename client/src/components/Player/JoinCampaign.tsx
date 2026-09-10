@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { joinCampaign } from "../../network/socket";
 
 export default function JoinCampaign(){
     const [code, setCode] = useState("");
@@ -9,7 +8,7 @@ export default function JoinCampaign(){
         e.preventDefault();
         if (!code) return;
         
-        joinCampaign(code, name);
+        // joinCampaign(code, name);
         setCode("");
         setName("");
     }
