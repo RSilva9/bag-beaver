@@ -1,65 +1,101 @@
-import { Inventory, Player } from "./types";
-import { Campaign, ConnectedPlayer } from "../../server/src/types";
+import { Inventory, Item, Player } from "./types";
+import { Campaign } from "./types";
 
 export interface ClientToServer {
+    // CAMPAIGN
     CREATE_CAMPAIGN: {};
-    HOST_CAMPAIGN: {
-        campaignCode: string;
-    };
-    CLOSE_CAMPAIGN: {};
+    GET_CAMPAIGNS: {};
     JOIN_CAMPAIGN: {
         campaignCode: string;
-        player: ConnectedPlayer;
+        playerName: string;
     };
+    JOIN_CAMPAIGN_AS_DM: {
+        campaignCode: string;
+        dmSecret: string;
+    };
+
+    // PLAYER
     CREATE_PLAYER: {
-        player: Player;
+        playerData: Player;
+        campaignCode: string;
     };
     DELETE_PLAYER: {
         playerId: number;
+        campaignCode: string;
     };
-    USE_ITEM: {
+
+    // INVENTORY
+    ADD_ITEM: {
+        item: Item;
+        playerId: number;
+        campaignCode: string;
+    };
+    REMOVE_ITEM: {
         itemId: string;
+        playerId: number;
+        campaignCode: string;
     };
     DROP_ITEM: {
         itemId: string;
         playerId: number;
         note: string;
+        campaignCode: string;
     };
     PICK_UP_ITEM: {
         itemId: string;
         playerId: number;
-    }
+        campaignCode: string;
+    };
     MOVE_ITEM: {
         itemId: string;
         playerId: number;
         bagId: string;
         direction: string;
+        campaignCode: string;
     };
     TRANSFER_ITEM: {
         itemId: string;
         giverPlayerId: number;
         getterPlayerId: number;
-    }
+        campaignCode: string;
+    };
+    CHANGE_ITEM_SIZE: {
+        playerId: number;
+        itemId: string;
+        newSize: number;
+        campaignCode: string;
+    };
 }
 
 export interface ServerToClient {
-    CAMPAIGN_CREATED: {
-        code: string;
+    // CAMPAIGN
+    CAMPAIGN_LIST:{
+        campaings: Campaign[]
     };
     CAMPAIGN_JOINED: {
         player: Player;
     };
-    CAMPAIGN_HOSTED: {
+    CAMPAIGN_JOINED_DM: {
         campaign: Campaign;
     };
-    CAMPAIGN_CLOSED: {};
+
+    // PLAYER
     PLAYER_CREATED: {
-        player: ConnectedPlayer;
+        player: Player;
     };
     PLAYER_DELETED: {};
+
+    // INVENTORY
     INVENTORY_SYNC: {
         inventory: Inventory;
     };
+    CAPACITY_UPDATED: {
+        playerId: number,
+        used: number,
+        max: number
+    }
+
+    // GENERAL
     ERROR: {
         message: string;
     };

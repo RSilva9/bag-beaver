@@ -1,9 +1,10 @@
 import { ServerWebSocket } from "bun";
 import { campaigns, connections } from "./campaigns";
 import randomstring from "randomstring";
-import { getPlayerByName, saveCampaign, getPlayerById, updateInventoryForPlayerAndDM, getCampaignByCode, getPlayerSocketById, getDMSocket } from "./utils";
+import { getPlayerByName, saveCampaign, getPlayerById, updateInventoryForPlayerAndDM, getCampaignByCode, getPlayerSocketById, getDMSocket, getInventoryLoad } from "./utils";
 import { Item, Player } from "../../shared/src/types";
-import { Campaign, Connection } from "./types";
+import { Connection } from "./types";
+import { Campaign } from "../../shared/src/types";
 
 //#region CAMPAIGNS
 export function createCampaign(){
@@ -24,6 +25,13 @@ export function createCampaign(){
     campaigns.set(campaignCode, campaign);
 
     saveCampaign(campaign);
+}
+
+export function getCampaigns(ws: ServerWebSocket){
+    ws.send(JSON.stringify({
+        type: "CAMPAIGN_LIST",
+        campaigns
+    }));
 }
 
 export function joinCampaign(ws: ServerWebSocket, campaignCode: string, playerName: string){
@@ -55,12 +63,43 @@ export function joinCampaign(ws: ServerWebSocket, campaignCode: string, playerNa
 
     connections.set(ws, connection);
 
-    saveCampaign(campaign);
-
     ws.send(JSON.stringify({
         type: "CAMPAIGN_JOINED",
-        player: player
+        player
     }));
+}
+
+export function joinCampaignAsDM(ws: ServerWebSocket, campaignCode: string, dmSecret: string){
+    const campaign = getCampaignByCode(campaignCode);
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found"
+        }));
+        return;
+    }
+
+    if(campaign.dmSecret !== dmSecret){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Invalid DM secret."
+        }));
+        return;
+    }
+
+    const connection: Connection = {
+        ws,
+        campaignCode,
+        playerId: -1,
+        role: "DM"
+    }
+
+    connections.set(ws, connection);
+
+    ws.send(JSON.stringify({
+        type: "CAMPAIGN_JOINED_DM",
+        campaign
+    }))
 }
 //#endregion
 
@@ -107,7 +146,8 @@ export function deletePlayer(ws: ServerWebSocket, playerId: number, campaignCode
         return;
     }
 
-    campaign.players.filter(p => p.id !== playerId);
+    campaign.players = 
+        campaign.players.filter(p => p.id !== playerId);
     saveCampaign(campaign);
 
     ws.send(JSON.stringify({
@@ -145,6 +185,16 @@ export function addItem(ws: ServerWebSocket, item: Item, playerId: number, campa
         return;
     }
 
+    const { used, max } = getInventoryLoad(player.inventory);
+    if(used + item.size > max){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Target player doesn't have enough capacity"
+        }));
+        return;
+    }
+    
+    item.id = randomstring.generate({ length: 8, charset: "alphanumeric" })
     player.inventory.items.push(item);
 
     saveCampaign(campaign);
@@ -208,7 +258,7 @@ export function dropItem(ws: ServerWebSocket, itemId: string, playerId: number, 
     }
 
     player.inventory.items =
-        player.inventory.items.filter(i => i !== droppedItem);
+        player.inventory.items.filter(i => i.id !== itemId);
 
     campaign.droppedItems.push({
         item: droppedItem,
@@ -239,11 +289,29 @@ export function pickUpItem(ws: ServerWebSocket, itemId: string, playerId: number
         return;
     }
 
+    const connection = connections.get(ws);
+    if(!connection || connection.role !== "DM"){
+        ws.send(JSON.stringify({ 
+            type: "ERROR", 
+            message: "Unauthorized, only the DM may assign dropped items." 
+        }));
+        return;
+    }
+
     const pickedUpItem = campaign.droppedItems.find(i => i.item.id === itemId)?.item;
     if(!pickedUpItem){
         ws.send(JSON.stringify({
             type: "ERROR",
             message: "Item not found."
+        }));
+        return;
+    }
+
+    const { used, max } = getInventoryLoad(player.inventory);
+    if(used + pickedUpItem.size > max){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Target player doesn't have enough capacity"
         }));
         return;
     }
@@ -277,11 +345,22 @@ export function moveItemIntoBag(ws: ServerWebSocket, itemId: string, playerId: n
     const item = player.inventory.items.find(i => i.id === itemId);
     const bag = player.inventory.items.find(i => i.id === bagId);
 
-    player.inventory.items =
-        player.inventory.items.filter(i => i !== item);
-    if (bag && bag.inventory) {
+    if (item && bag && bag.inventory) {
+        const { used, max } = getInventoryLoad(bag.inventory);
+        if(used + item.size > max){
+            ws.send(JSON.stringify({
+                type: "ERROR",
+                message: "The selected bag doesn't have enough capacity"
+            }));
+            return;
+        }
+
+        player.inventory.items =
+            player.inventory.items.filter(i => i.id !== itemId);
         bag.inventory.items.push(item!);
     }
+
+    saveCampaign(campaign);
     
     updateInventoryForPlayerAndDM(playerId, campaignCode, player.inventory);
 }
@@ -307,11 +386,22 @@ export function moveItemOutOfBag(ws: ServerWebSocket, itemId: string, playerId: 
 
     const item = player.inventory.items.find(i => i.id === itemId);
     const bag = player.inventory.items.find(i => i.id === bagId);
+    
+    if (item && bag && bag.inventory) {
+        const { used, max } = getInventoryLoad(player.inventory);
+        if(used + item.size > max){
+            ws.send(JSON.stringify({
+                type: "ERROR",
+                message: "Player inventory doesn't have enough capacity"
+            }));
+            return;
+        }
 
-    if (bag && bag.inventory) {
-        bag.inventory.items = bag.inventory.items.filter(i => i !== item);
+        bag.inventory.items = bag.inventory.items.filter(i => i.id !== itemId);
+        player.inventory.items.push(item!);
     }
-    player.inventory.items.push(item!);
+
+    saveCampaign(campaign);
 
     updateInventoryForPlayerAndDM(playerId, campaignCode, player.inventory);
 }
@@ -325,6 +415,7 @@ export function transferItem(ws: ServerWebSocket, itemId: string, giverPlayerId:
         }));
         return;
     }
+    
     const giverPlayer = getPlayerById(campaign, giverPlayerId);
     const getterPlayer = getPlayerById(campaign, getterPlayerId);
     if(!giverPlayer || !getterPlayer){
@@ -336,12 +427,79 @@ export function transferItem(ws: ServerWebSocket, itemId: string, giverPlayerId:
     }
 
     const item = giverPlayer.inventory.items.find(i => i.id === itemId);
+    if(!item){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Item not found."
+        }));
+        return;
+    }
+
+    const { used, max } = getInventoryLoad(getterPlayer.inventory);
+    if(used + item.size > max){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Target player doesn't have enough capacity"
+        }));
+        return;
+    }
 
     giverPlayer.inventory.items =
-        giverPlayer.inventory.items.filter(i => i !== item);
+        giverPlayer.inventory.items.filter(i => i.id !== itemId);
     getterPlayer.inventory.items.push(item!);
+
+    saveCampaign(campaign);
 
     updateInventoryForPlayerAndDM(giverPlayerId, campaignCode, giverPlayer.inventory);
     updateInventoryForPlayerAndDM(getterPlayerId, campaignCode, getterPlayer.inventory);
 }
+
+export function broadcastCapacity(playerId: number, load: { used: number; max: number }, campaignCode: string){
+    for(const [ws, conn] of connections){
+        if(conn.campaignCode === campaignCode){
+            ws.send(JSON.stringify({
+                type: "CAPACITY_UPDATED",
+                playerId,
+                used: load.used,
+                max: load.max
+            }))
+        }
+    }
+}
+
+export function changeItemSize(ws: ServerWebSocket, playerId: number, itemId: string, newSize: number, campaignCode: string){
+    const campaign = getCampaignByCode(campaignCode);
+    if(!campaign){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Campaign not found."
+        }));
+        return;
+    }
+
+    const player = getPlayerById(campaign, playerId);
+    if(!player){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Player not found."
+        }));
+        return;
+    }
+
+    const item = player.inventory.items.find(i => i.id === itemId);
+    if(!item){
+        ws.send(JSON.stringify({
+            type: "ERROR",
+            message: "Item not found."
+        }));
+        return;
+    }
+
+    item.size = newSize;
+
+    saveCampaign(campaign);
+
+    updateInventoryForPlayerAndDM(playerId, campaignCode, player.inventory);
+}
+
 //#endregion

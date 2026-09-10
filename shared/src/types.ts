@@ -22,3 +22,11 @@ export interface Player {
     inventory: Inventory;
     role: "PLAYER" | "DM";
 }
+
+export interface Campaign {
+    code: string;
+    dmSecret: string;
+    nextPlayerId: number;
+    players: Player[];
+    droppedItems: DroppedItem[];
+}

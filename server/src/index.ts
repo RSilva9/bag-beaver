@@ -1,5 +1,5 @@
 import { connections } from "./campaigns";
-import { addItem, createCampaign, createPlayer, deletePlayer, dropItem, joinCampaign, moveItemIntoBag, moveItemOutOfBag, pickUpItem, removeItem, transferItem } from "./handlers";
+import { addItem, createCampaign, createPlayer, deletePlayer, dropItem, getCampaigns, joinCampaign, moveItemIntoBag, moveItemOutOfBag, pickUpItem, removeItem, transferItem } from "./handlers";
 
 const server = Bun.serve({
     port: 3000,
@@ -24,6 +24,9 @@ const server = Bun.serve({
                 case "CREATE_CAMPAIGN":
                     createCampaign();
                     break;
+                case "GET_CAMPAIGNS":
+                    getCampaigns(ws);
+                    break
                 case "JOIN_CAMPAIGN":
                     joinCampaign(ws, data.campaignCode, data.playerName)
                     break;

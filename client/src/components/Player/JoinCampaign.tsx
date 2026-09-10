@@ -5,7 +5,7 @@ export default function JoinCampaign(){
     const [code, setCode] = useState("");
     const [name, setName] = useState("");
 
-    const handleSubmit = (e) => {
+    const handleSubmit = (e: any) => {
         e.preventDefault();
         if (!code) return;
         

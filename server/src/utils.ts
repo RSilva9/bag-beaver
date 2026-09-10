@@ -1,8 +1,8 @@
-import { ServerWebSocket } from "bun";
 import { campaigns, connections } from "./campaigns";
-import { Campaign, Connection } from "./types";
+import { Campaign } from "../../shared/src/types";
 import fs from "fs";
 import { Inventory, Item, Player } from "../../shared/src/types";
+import { broadcastCapacity } from "./handlers";
 
 export function getPlayerByName(campaign: Campaign, playerName: string): Player | undefined {
     if(!campaign.players){
@@ -11,6 +11,7 @@ export function getPlayerByName(campaign: Campaign, playerName: string): Player 
     }
 
     const foundPlayer = campaign.players.find(p => p.name === playerName);
+    console.log(foundPlayer);
 
     return foundPlayer;
 }
@@ -84,4 +85,11 @@ export function updateInventoryForPlayerAndDM(playerId: number, campaignCode: st
             inventory
         }));
     }
+
+    broadcastCapacity(playerId, getInventoryLoad(inventory), campaignCode);
+}
+
+export function getInventoryLoad(inventory: Inventory): { used: number; max: number; } {
+    const used = inventory.items.reduce((sum, item) => sum + item.size, 0);
+    return { used, max: inventory.capacity };
 }

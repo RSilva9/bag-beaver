@@ -1,102 +1,33 @@
-import { type Inventory, type Item } from "../../../shared/src/types";
+import useWebSocket, { ReadyState } from "react-use-websocket";
+import { useEffect } from "react";
+import { useAppStore } from "./store";
 
-let socket: WebSocket;
+export function useSocketConnection(){
+    const setSendMessage = useAppStore(s => s.setSendMessage);
+    const setCampaigns = useAppStore(s => s.setCampaigns);
+    const setInventory = useAppStore(s => s.setInventory);
+    const setError = useAppStore(s => s.setError);
 
-export function connect() {
-    socket = new WebSocket("ws://localhost:3000");
+    const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket("ws://localhost:3000", {
+        shouldReconnect: () => true
+    })
 
-    socket.onopen = console.log("Connected");
-    socket.onmessage = (e: MessageEvent) => console.log(`${JSON.parse(e.data).type}: ${JSON.parse(e.data).message}`);
+    useEffect(() => {
+        setSendMessage(sendJsonMessage);
+    }, [sendJsonMessage, setSendMessage]);
+
+    useEffect(() => {
+        if(!lastJsonMessage) return;
+        const data = lastJsonMessage as any;
+
+        switch(data.type){
+            case "CAMPAIGN_LIST":
+                setCampaigns(data.campaigns);
+                break;
+            case "CAMPAIGN_JOINED":
+                
+        }
+    }, [lastJsonMessage]);
+
+    return { readyState };
 }
-
-//#region CAMPAIGN
-export function createCampaign(){
-    socket.send(JSON.stringify({
-        type: "CREATE_CAMPAIGN"
-    }));
-}
-
-export function hostCampaign(campaignCode: string){
-    socket.send(JSON.stringify({
-        type: "HOST_CAMPAIGN",
-        campaignCode
-    }));
-}
-
-export function joinCampaign(campaignCode: string, playerName: string){
-    socket.send(JSON.stringify({
-        type: "JOIN_CAMPAIGN",
-        campaignCode,
-        playerName
-    }));
-}
-
-export function closeCampaign(campaignCode: string){
-    socket.send(JSON.stringify({
-        type: "CLOSE_CAMPAIGN",
-        campaignCode
-    }));
-}
-
-export function createPlayer(playerName: string, inventory: Inventory){
-    socket.send(JSON.stringify({
-        type: "CREATE_PLAYER",
-        playerName,
-        inventory
-    }));
-}
-//#endregion
-
-//#region INVENTORY
-export function addItem(item: Item, playerId: number){
-    socket.send(JSON.stringify({
-        type: "ADD_ITEM",
-        item,
-        playerId
-    }));
-}
-
-export function removeItem(item: Item, playerId: number){
-    socket.send(JSON.stringify({
-        type: "REMOVE_ITEM",
-        item,
-        playerId
-    }));
-}
-
-export function dropitem(itemId: string, playerId: number, note: string){
-    socket.send(JSON.stringify({
-        type: "DROP_ITEM",
-        itemId,
-        playerId,
-        note
-    }));
-}
-
-export function pickUpItem(itemId: string, playerId: number){
-    socket.send(JSON.stringify({
-        type: "PICK_UP_ITEM",
-        itemId,
-        playerId,
-    }));
-}
-
-export function moveItemBetweenContainers(direction: string, itemId: string, playerId: number, bagId: string){
-    socket.send(JSON.stringify({
-        type: "MOVE_ITEM",
-        itemId,
-        playerId,
-        bagId,
-        direction
-    }));
-}
-
-export function transferItemToPlayer(itemId: string, giverPlayerId: number, getterPlayerId: number){
-    socket.send(JSON.stringify({
-        type: "TRANSFER_ITEM",
-        itemId,
-        giverPlayerId,
-        getterPlayerId
-    }))
-}
-//#endregion

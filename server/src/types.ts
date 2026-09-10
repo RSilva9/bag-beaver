@@ -7,11 +7,3 @@ export interface Connection {
     playerId?: number;
     role: "PLAYER" | "DM";
 }
-
-export interface Campaign {
-    code: string;
-    dmSecret: string;
-    nextPlayerId: number;
-    players: Player[];
-    droppedItems: DroppedItem[];
-}
