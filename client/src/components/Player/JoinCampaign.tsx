@@ -8,7 +8,7 @@ export default function JoinCampaign(){
         e.preventDefault();
         if (!code) return;
         
-        // joinCampaign(code, name);
+        joinCampaign(code, name);
         setCode("");
         setName("");
     }

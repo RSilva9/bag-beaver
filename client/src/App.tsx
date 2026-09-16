@@ -23,14 +23,12 @@ function App() {
 
         <Route path="/campaign-dashboard" element = {
           <div>
-            <h2>HOLA</h2>
             <CampaignDashboard />
           </div>
         } />
 
         <Route path="/campaign/:campaignCode" element = {
           <div>
-            <h2>HOLA</h2>
             <CampaignView />
           </div>
         } />

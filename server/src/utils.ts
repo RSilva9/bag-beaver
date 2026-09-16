@@ -41,8 +41,11 @@ export function getDMSocket(campaignCode: string){
 export function saveCampaign(campaign: Campaign){
     fs.writeFile(`./campaigns/campaign-${campaign.code}.json`, JSON.stringify({
         code: campaign.code,
+        name: campaign.name,
+        dmSecret: campaign.dmSecret,
         nextPlayerId: campaign.nextPlayerId,
-        players: campaign.players
+        players: campaign.players,
+        droppedItems: campaign.droppedItems,
     }, null, 4), "utf-8", (err) => {
         if (err) throw err;
         console.log('The file has been saved!');

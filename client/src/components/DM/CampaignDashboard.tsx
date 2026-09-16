@@ -30,6 +30,7 @@ export default function CampaignDashboard(){
                             >
                                 Open campaign
                             </Link>
+                            <Link to={`/campaign/${c.code}?dm=${c.dmSecret}`}>Open as DM</Link>
                         </div>
                     ))
                 }
