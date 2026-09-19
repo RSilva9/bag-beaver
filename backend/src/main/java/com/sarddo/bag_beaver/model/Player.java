@@ -2,14 +2,12 @@ package com.sarddo.bag_beaver.model;
 
 import jakarta.persistence.*;
 
-import java.util.UUID;
-
 @Entity
 @Table(name = "players")
 public class Player {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     private String name;
 
@@ -21,18 +19,25 @@ public class Player {
     @Column(name = "player_role", nullable = false)
     private PlayerRole playerRole;
 
-    public Player() {}
+    @ManyToOne(optional = true)
+    @JoinColumn(name = "campaign_code")
+    private Campaign campaign;
 
-    public UUID getId() { return id; }
-    private void setId(UUID id) { this.id = id; }
+    protected Player() {}
 
+    public Player(String name, Inventory inventory, PlayerRole playerRole) {
+        this.name = name;
+        this.inventory = inventory;
+        this.playerRole = playerRole;
+    }
+
+    public Long getId() { return id; }
     public String getName() { return name; }
-    private void setName(String name) { this.name = name; }
-
     public Inventory getInventory() { return inventory; }
-    private void setInventory(Inventory inventory) { this.inventory = inventory; }
+    public PlayerRole getPlayerRole() { return playerRole; }
+    public Campaign getCampaign() { return campaign; }
 
-    public PlayerRole getRole() { return playerRole; }
-    private void setPlayerRole(PlayerRole playerRole) { this.playerRole = playerRole; }
-
+    public void setPlayerRole(PlayerRole playerRole) { this.playerRole = playerRole; }
+    public void setName(String name) { this.name = name; }
+    public void setCampaign(Campaign campaign) { this.campaign = campaign; }
 }
