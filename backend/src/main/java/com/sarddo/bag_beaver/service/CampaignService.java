@@ -5,6 +5,7 @@ import com.sarddo.bag_beaver.model.DroppedItem;
 import com.sarddo.bag_beaver.model.Item;
 import com.sarddo.bag_beaver.model.Player;
 import com.sarddo.bag_beaver.repository.CampaignRepository;
+import com.sarddo.bag_beaver.repository.DroppedItemRepository;
 import com.sarddo.bag_beaver.repository.ItemRepository;
 import com.sarddo.bag_beaver.repository.PlayerRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,11 +19,14 @@ public class CampaignService {
     private final CampaignRepository campaignRepository;
     private final PlayerRepository playerRepository;
     private final ItemRepository itemRepository;
+    private final DroppedItemRepository droppedItemRepository;
 
-    public CampaignService(CampaignRepository campaignRepository, PlayerRepository playerRepository, ItemRepository itemRepository){
+    public CampaignService(CampaignRepository campaignRepository, PlayerRepository playerRepository,
+                           ItemRepository itemRepository, DroppedItemRepository droppedItemRepository){
         this.campaignRepository = campaignRepository;
         this.playerRepository = playerRepository;
         this.itemRepository = itemRepository;
+        this.droppedItemRepository = droppedItemRepository;
     }
 
     public void createCampaign(String code, String name, String dmSecret) {
@@ -56,8 +60,18 @@ public class CampaignService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
 
-        List<DroppedItem> droppedItems = campaign.getDroppedItems();
-        droppedItems.add(new DroppedItem(campaign, item, note));
+        droppedItemRepository.save(new DroppedItem(campaign, item, note));
         player.getInventory().removeItem(item);
+    }
+
+    @Transactional
+    public void pickUpItem(String campaignCode, Long playerId, Long itemId) {
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        DroppedItem droppedItem = droppedItemRepository.findByCampaign_CodeAndItem_Id(campaignCode, itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        player.getInventory().addItem(droppedItem.getItem());
+        droppedItemRepository.delete(droppedItem);
     }
 }

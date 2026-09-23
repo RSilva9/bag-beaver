@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "inventories")
@@ -36,6 +35,9 @@ public class Inventory {
     }
 
     public void addItem(Item item) {
+        if(item.getSize() > this.getAvailableSize()){
+            throw new IllegalStateException("Not enough space in inventory.");
+        }
         this.items.add(item);
     }
     public void removeItem(Item item) {
