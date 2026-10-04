@@ -13,10 +13,10 @@ public class ItemService {
         this.itemRepository = itemRepository;
     }
 
-    public void createItem(String name, String description, Double size) {
-        itemRepository.save(
-                new Item(name, description, size)
-        );
+    public Item createItem(String name, String description, Double size) {
+        Item item = new Item(name, description, size);
+        itemRepository.save(item);
+        return item;
     }
 
     public void deleteItem(Long itemId) {

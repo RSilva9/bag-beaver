@@ -1,9 +1,6 @@
 package com.sarddo.bag_beaver.service;
 
-import com.sarddo.bag_beaver.model.Campaign;
-import com.sarddo.bag_beaver.model.DroppedItem;
-import com.sarddo.bag_beaver.model.Item;
-import com.sarddo.bag_beaver.model.Player;
+import com.sarddo.bag_beaver.model.*;
 import com.sarddo.bag_beaver.repository.CampaignRepository;
 import com.sarddo.bag_beaver.repository.DroppedItemRepository;
 import com.sarddo.bag_beaver.repository.ItemRepository;
@@ -12,7 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.UUID;
 
 @Service
 public class CampaignService {
@@ -20,18 +17,28 @@ public class CampaignService {
     private final PlayerRepository playerRepository;
     private final ItemRepository itemRepository;
     private final DroppedItemRepository droppedItemRepository;
+    private final ItemService itemService;
+    private final InventoryService inventoryService;
 
     public CampaignService(CampaignRepository campaignRepository, PlayerRepository playerRepository,
-                           ItemRepository itemRepository, DroppedItemRepository droppedItemRepository){
+                           ItemRepository itemRepository, DroppedItemRepository droppedItemRepository, ItemService itemService, InventoryService inventoryService){
         this.campaignRepository = campaignRepository;
         this.playerRepository = playerRepository;
         this.itemRepository = itemRepository;
         this.droppedItemRepository = droppedItemRepository;
+        this.itemService = itemService;
+        this.inventoryService = inventoryService;
     }
 
-    public void createCampaign(String code, String name, String dmSecret) {
+    public void createCampaign(String name, String dmSecret) {
+        String newCode = "";
+        do {
+            newCode = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        }
+        while(campaignRepository.existsById(newCode));
+
         campaignRepository.save(
-                new Campaign(code, name, dmSecret)
+                new Campaign(newCode, name, dmSecret)
         );
     }
 
@@ -49,6 +56,19 @@ public class CampaignService {
                 .orElseThrow(() -> new EntityNotFoundException("Campaign not found"));
         campaign.removePlayer(player);
         player.setCampaign(null);
+    }
+
+    @Transactional
+    public void deletePlayer(Long playerId){
+        playerRepository.deleteById(playerId);
+    }
+
+    @Transactional
+    public void grantItemToPlayer(String itemName, String itemDescription, Double itemSize, Long playerId){
+        Item item = itemService.createItem(itemName, itemDescription, itemSize);
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
+        inventoryService.addItemToInventory(item.getId(), player.getInventory().getId());
     }
 
     @Transactional
