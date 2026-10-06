@@ -22,11 +22,21 @@ public class PlayerService {
         this.inventoryService = inventoryService;
     }
 
+    public Player getPlayer(String campaignCode, Long playerId) {
+        return playerRepository.findByIdAndCampaignCode(playerId, campaignCode)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found."));
+    }
+
+    public Player getPlayerByName(String campaignCode, String playerName) {
+        return playerRepository.findByNameAndCampaignCode(playerName, campaignCode)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found."));
+    }
+
     @Transactional
-    public void createPlayer(String name, Inventory inventory, PlayerRole playerRole, Campaign campaign) {
-        Player player = new Player(name, inventory, playerRole);
+    public void createPlayer(String name, Inventory inventory, String campaignCode) {
+        Player player = new Player(name, inventory, PlayerRole.PLAYER);
         playerRepository.save(player);
-        campaignService.addPlayerToCampaign(campaign.getCode() , player);
+        campaignService.addPlayerToCampaign(campaignCode , player);
     }
 
     @Transactional

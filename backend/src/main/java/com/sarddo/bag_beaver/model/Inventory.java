@@ -27,11 +27,14 @@ public class Inventory {
     public String getName() { return name; }
     public Double getCapacity() { return capacity; }
 
-    public Double getAvailableSize() {
-        Double currentlyOccupiedSize = this.getItems().stream()
+    public Double getUsedSize() {
+        return this.getItems().stream()
                 .mapToDouble(Item::getSize)
                 .sum();
-        return this.capacity - currentlyOccupiedSize;
+    }
+
+    public Double getAvailableSize() {
+        return this.capacity - this.getUsedSize();
     }
 
     public void addItem(Item item) {
