@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface PlayerRepository extends JpaRepository<Player, Long> {
     Optional<Player> findByIdAndCampaignCode(Long id, String campaignCode);
     Optional<Player> findByNameAndCampaignCode(String name, String campaignCode);
+    Optional<Player> findByInventory_Items_Id(Long itemId);
+    Optional<Player> findByInventory_Items_Bag_Items_Id(Long itemId);
 }

@@ -33,10 +33,13 @@ public class PlayerService {
     }
 
     @Transactional
-    public void createPlayer(String name, Inventory inventory, String campaignCode) {
+    public Player createPlayer(String name, String inventoryName, Double inventoryCapacity, String campaignCode) {
+        Inventory inventory = this.inventoryService.createInventory(inventoryName, inventoryCapacity);
         Player player = new Player(name, inventory, PlayerRole.PLAYER);
         playerRepository.save(player);
-        campaignService.addPlayerToCampaign(campaignCode , player);
+        campaignService.addPlayerToCampaign(campaignCode , player.getId());
+
+        return player;
     }
 
     @Transactional

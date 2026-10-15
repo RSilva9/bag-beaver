@@ -22,10 +22,18 @@ public class Inventory {
 
     protected Inventory() {}
 
+    public Inventory(String name, Double capacity) {
+        this.name = name;
+        this.capacity = capacity;
+    }
+
     public Long getId() { return id; }
     public List<Item> getItems() { return items; }
     public String getName() { return name; }
     public Double getCapacity() { return capacity; }
+    public Boolean hasEnoughCapacity(Double incomingSize) {
+        return this.getAvailableSize() >= incomingSize;
+    }
 
     public Double getUsedSize() {
         return this.getItems().stream()
@@ -38,7 +46,7 @@ public class Inventory {
     }
 
     public void addItem(Item item) {
-        if(item.getSize() > this.getAvailableSize()){
+        if(!hasEnoughCapacity(item.getSize())){
             throw new IllegalStateException("Not enough space in inventory.");
         }
         this.items.add(item);

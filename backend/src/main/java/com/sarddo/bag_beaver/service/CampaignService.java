@@ -5,16 +5,12 @@ import com.sarddo.bag_beaver.repository.CampaignRepository;
 import com.sarddo.bag_beaver.repository.DroppedItemRepository;
 import com.sarddo.bag_beaver.repository.ItemRepository;
 import com.sarddo.bag_beaver.repository.PlayerRepository;
-import com.sarddo.bag_beaver.websocket.Connection;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
-import org.springframework.web.socket.WebSocketSession;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -52,7 +48,7 @@ public class CampaignService {
     }
 
     public void createCampaign(String name, String dmSecret) {
-        String newCode = "";
+        String newCode;
         do {
             newCode = UUID.randomUUID().toString().replace("-", "").substring(0, 10);
         }
@@ -63,10 +59,18 @@ public class CampaignService {
         );
     }
 
+    public Player getItemOwner(Long itemId) {
+        return playerRepository.findByInventory_Items_Id(itemId)
+                .or(() -> playerRepository.findByInventory_Items_Bag_Items_Id(itemId))
+                .orElseThrow(() -> new EntityNotFoundException("Item owner not found"));
+    }
+
     @Transactional
-    public void addPlayerToCampaign(String campaignCode, Player player) {
+    public void addPlayerToCampaign(String campaignCode, Long playerId) {
         Campaign campaign = campaignRepository.findById(campaignCode)
                 .orElseThrow(() -> new EntityNotFoundException("Campaign not found"));
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new EntityNotFoundException("Player not found"));
         campaign.addPlayer(player);
         player.setCampaign(campaign);
     }
@@ -122,11 +126,10 @@ public class CampaignService {
     public List<PlayerSummary> getPartyStatus(String campaignCode) {
         Campaign campaign = campaignRepository.findById(campaignCode)
                 .orElseThrow(() -> new EntityNotFoundException("Campaign not found"));
-        final List<PlayerSummary> playerSummary = campaign.getPlayers().stream()
+        return campaign.getPlayers().stream()
                 .filter(p -> p.getPlayerRole() != PlayerRole.DM)
                 .map(p -> new PlayerSummary(p.getId(), p.getName(), p.getInventory().getUsedSize(), p.getInventory().getCapacity()))
                 .collect(Collectors.toList());
-        return playerSummary;
     }
 
     @Transactional

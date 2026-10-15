@@ -17,6 +17,12 @@ public class InventoryService {
         this.itemRepository = itemRepository;
     }
 
+    public Inventory createInventory(String name, Double capacity){
+        Inventory inventory = new Inventory(name, capacity);
+        inventoryRepository.save(inventory);
+        return inventory;
+    }
+
     public void addItemToInventory(Long itemId, Long inventoryId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found."));
